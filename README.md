@@ -1,5 +1,7 @@
 # Bagdar — AI career guidance for Kazakhstan school students
 
+![Bagdar](docs/cover.jpg)
+
 Bagdar helps students in grades 9–11 choose a career based on three things: **interests, abilities and future-proofness**, and shows whether the education investment pays off on Kazakhstan's labour market (NPV, IRR, payback, risk of loss).
 
 Interface: Kazakh, Russian (English in progress).
