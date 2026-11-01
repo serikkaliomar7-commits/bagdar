@@ -1,0 +1,12 @@
+# secrets and student data — never commit
+.env
+/data/
+*.db
+# third-party datasets (download instructions in README)
+research/raw/
+# local / private
+competition/
+.claude/
+__pycache__/
+*.pyc
+.DS_Store

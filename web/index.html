@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Bağdar — мамандығыңды тап</title>
+  <meta name="description" content="Мамандық таңдау тесті: қабілет, қызығушылық, ЖИ-сұхбат және білім инвестициясының өтелуі.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar" id="topbar">
+    <a class="brand" href="#/" data-nav="home">
+      <span class="brand__mark" aria-hidden="true"></span>Bağdar
+    </a>
+    <div class="topbar__progress" id="progress" hidden>
+      <div class="topbar__bar"><div class="topbar__fill" id="progress-fill"></div></div>
+      <span class="topbar__label" id="progress-label"></span>
+    </div>
+    <div class="langs" id="langs">
+      <button data-lang="kk">ҚАЗ</button>
+      <button data-lang="ru">РУС</button>
+      <button data-lang="en">ENG</button>
+    </div>
+  </header>
+
+  <main id="app" class="app" aria-live="polite"></main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
