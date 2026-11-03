@@ -77,7 +77,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 575000,
-  "n": 18
+  "n": 18,
+  "values": [
+   0.722,
+   0.75,
+   0.722,
+   0.5,
+   0.612,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "electrical",
@@ -154,7 +163,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.75,
+   0.722,
+   0.555,
+   0.555,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "mechanical",
@@ -230,7 +248,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.722,
+   0.695,
+   0.778,
+   0.612,
+   0.612,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "petroleum",
@@ -307,7 +334,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.722,
+   0.778,
+   0.722,
+   0.445,
+   0.667,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "mining",
@@ -384,7 +420,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.667,
+   0.805,
+   0.667,
+   0.445,
+   0.778,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "pilot",
@@ -464,7 +509,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.805,
+   0.778,
+   0.667,
+   0.888,
+   0.888
+  ],
+  "kz": {}
  },
  {
   "id": "agro",
@@ -540,7 +594,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": 550000,
-  "n": 13
+  "n": 13,
+  "values": [
+   0.833,
+   0.667,
+   0.722,
+   0.5,
+   0.388,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "vet",
@@ -620,7 +683,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   1.0,
+   0.805,
+   0.833,
+   0.833,
+   0.612,
+   0.888
+  ],
+  "kz": {}
  },
  {
   "id": "chef",
@@ -698,7 +770,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.667,
+   0.583,
+   0.722,
+   0.612,
+   0.445,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "geologist",
@@ -776,7 +857,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.722,
+   0.722,
+   0.722,
+   0.388,
+   0.222,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "architect",
@@ -854,7 +944,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.75,
+   0.778,
+   0.445,
+   0.555,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "backend",
@@ -930,7 +1029,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 750000,
-  "n": 17
+  "n": 17,
+  "values": [
+   0.778,
+   0.75,
+   0.555,
+   0.222,
+   0.667,
+   0.667
+  ],
+  "kz": {}
  },
  {
   "id": "ml",
@@ -1007,7 +1115,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 1000000,
-  "n": 7
+  "n": 7,
+  "values": [
+   0.722,
+   0.612,
+   0.667,
+   0.612,
+   0.333,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "cyber",
@@ -1083,7 +1200,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.612,
+   0.778,
+   0.555,
+   0.555,
+   0.722,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "doctor",
@@ -1163,7 +1289,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 425000,
-  "n": 39
+  "n": 39,
+  "values": [
+   0.888,
+   0.833,
+   0.888,
+   0.945,
+   0.667,
+   0.888
+  ],
+  "kz": {}
  },
  {
   "id": "dentist",
@@ -1243,7 +1378,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.833,
+   0.805,
+   0.778,
+   0.833,
+   0.388,
+   0.945
+  ],
+  "kz": {}
  },
  {
   "id": "pharmacist",
@@ -1322,7 +1466,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.612,
+   0.612,
+   0.778,
+   0.667,
+   0.722,
+   0.612
+  ],
+  "kz": {}
  },
  {
   "id": "biochem",
@@ -1399,7 +1552,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.778,
+   0.833,
+   0.445,
+   0.445,
+   0.667
+  ],
+  "kz": {}
  },
  {
   "id": "chemist",
@@ -1476,7 +1638,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.695,
+   0.667,
+   0.333,
+   0.612,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "ecologist",
@@ -1553,7 +1724,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.667,
+   0.612,
+   0.667,
+   0.5,
+   0.445,
+   0.667
+  ],
+  "kz": {}
  },
  {
   "id": "economist",
@@ -1630,7 +1810,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 432500,
-  "n": 28
+  "n": 28,
+  "values": [
+   0.667,
+   0.778,
+   0.667,
+   0.222,
+   0.388,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "designer",
@@ -1706,7 +1895,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": 400000,
-  "n": 58
+  "n": 58,
+  "values": [
+   0.667,
+   0.722,
+   0.667,
+   0.5,
+   0.555,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "gamedev",
@@ -1782,7 +1980,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.833,
+   0.695,
+   0.555,
+   0.333,
+   0.445,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "graphic",
@@ -1858,7 +2065,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.583,
+   0.612,
+   0.5,
+   0.5,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "interior",
@@ -1936,7 +2152,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.583,
+   0.555,
+   0.667,
+   0.222,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "journalist",
@@ -2012,7 +2237,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.625,
+   0.75,
+   0.638,
+   0.445,
+   0.695
+  ],
+  "kz": {}
  },
  {
   "id": "director",
@@ -2088,7 +2322,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.805,
+   0.68,
+   0.833,
+   0.695,
+   0.305,
+   0.888
+  ],
+  "kz": {}
  },
  {
   "id": "translator",
@@ -2162,7 +2405,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.445,
+   0.528,
+   0.5,
+   0.722,
+   0.445,
+   0.445
+  ],
+  "kz": {}
  },
  {
   "id": "teacher",
@@ -2239,7 +2491,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 325000,
-  "n": 41
+  "n": 41,
+  "values": [
+   0.778,
+   0.722,
+   0.5,
+   1.0,
+   0.612,
+   0.667
+  ],
+  "kz": {}
  },
  {
   "id": "primary",
@@ -2318,7 +2579,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.667,
+   0.555,
+   0.888,
+   0.667,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "psych",
@@ -2394,7 +2664,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 300000,
-  "n": 37
+  "n": 37,
+  "values": [
+   0.805,
+   0.792,
+   0.722,
+   0.972,
+   0.362,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "nurse",
@@ -2473,7 +2752,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 300000,
-  "n": 41
+  "n": 41,
+  "values": [
+   0.722,
+   0.638,
+   0.612,
+   0.888,
+   0.833,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "social",
@@ -2551,7 +2839,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.833,
+   0.667,
+   0.445,
+   0.945,
+   0.612,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "coach",
@@ -2630,7 +2927,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.833,
+   0.5,
+   0.5,
+   0.833,
+   0.445,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "speech",
@@ -2706,7 +3012,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.695,
+   0.612,
+   0.945,
+   0.5,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "physio",
@@ -2783,7 +3098,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.778,
+   0.722,
+   0.778,
+   0.945,
+   0.612,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "lawyer",
@@ -2859,7 +3183,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 500000,
-  "n": 37
+  "n": 37,
+  "values": [
+   0.833,
+   0.833,
+   0.888,
+   0.5,
+   0.555,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "marketing",
@@ -2937,7 +3270,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.833,
+   0.862,
+   0.722,
+   0.778,
+   0.667,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "market_an",
@@ -3013,7 +3355,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.612,
+   0.555,
+   0.445,
+   0.388,
+   0.555,
+   0.5
+  ],
+  "kz": {}
  },
  {
   "id": "pm",
@@ -3090,7 +3441,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.722,
+   0.695,
+   0.667,
+   0.833,
+   0.445,
+   0.722
+  ],
+  "kz": {}
  },
  {
   "id": "hr",
@@ -3167,7 +3527,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.667,
+   0.638,
+   0.5,
+   0.778,
+   0.722,
+   0.5
+  ],
+  "kz": {}
  },
  {
   "id": "sales",
@@ -3244,7 +3613,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.612,
+   0.612,
+   0.445,
+   0.667,
+   0.445,
+   0.612
+  ],
+  "kz": {}
  },
  {
   "id": "finance",
@@ -3322,7 +3700,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.5,
+   0.722,
+   0.5,
+   0.445,
+   0.612,
+   0.555
+  ],
+  "kz": {}
  },
  {
   "id": "hotel",
@@ -3401,7 +3788,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.667,
+   0.528,
+   0.555,
+   1.0,
+   0.5,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "manager",
@@ -3477,7 +3873,16 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.722,
+   0.833,
+   0.778,
+   0.888,
+   0.612,
+   0.833
+  ],
+  "kz": {}
  },
  {
   "id": "logist",
@@ -3551,7 +3956,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 462500,
-  "n": 40
+  "n": 40,
+  "values": [
+   0.722,
+   0.638,
+   0.667,
+   0.667,
+   0.555,
+   0.778
+  ],
+  "kz": {}
  },
  {
   "id": "accountant",
@@ -3627,7 +4041,16 @@ export const CAREERS = [
    "verify": false
   },
   "salary": 450000,
-  "n": 49
+  "n": 49,
+  "values": [
+   0.667,
+   0.583,
+   0.612,
+   0.612,
+   0.612,
+   0.667
+  ],
+  "kz": {}
  },
  {
   "id": "banker",
@@ -3705,6 +4128,15 @@ export const CAREERS = [
    "verify": true
   },
   "salary": null,
-  "n": null
+  "n": null,
+  "values": [
+   0.612,
+   0.555,
+   0.612,
+   0.833,
+   0.667,
+   0.722
+  ],
+  "kz": {}
  }
 ];

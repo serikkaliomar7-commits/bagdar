@@ -7,6 +7,7 @@ import { TYPE_NAMES } from "../data/interest_items.js";
 import { tagLabel, regionK } from "../data/filters.js";
 import { analyse, monteCarlo, TUITION } from "../econ.js";
 import { pillars, preview, reactBlock } from "./explore.js";
+import { VALUES } from "../data/values.js";
 
 const START_AGE = 18;
 
@@ -23,6 +24,11 @@ function reasons(r, res) {
   if (r.iv?.delta < 0) down.push({ quote: r.iv.quote, reason: r.iv.reason });
   if (r.rjp?.reaction >= 4) up.push("👀 " + t("why_rjp_yes"));
   if (r.rjp?.reaction <= 2) down.push("👀 " + t("why_rjp_no"));
+  if (r.valuesR != null && S.values?.length) {          // ең маңызды құндылықпен сәйкестік
+    const v = VALUES.find(x => x.id === S.values[0]), name = v ? `${v.e} ${L(v).toLowerCase()}` : "";
+    if (r.valuesR >= 0.5) up.push(t("why_val_yes").replace("{x}", name));
+    else if (r.valuesR <= -0.2) down.push(t("why_val_no").replace("{x}", name));
+  }
   if (r.future < 0.5) down.push("🔮 " + t("why_future"));
   return { up, down };
 }
@@ -36,6 +42,7 @@ export function result(app, { go }) {
   S.top3 = res.visible.slice(0, 3).map(r => r.c.id);
   S.fits = Object.fromEntries(res.rows.map(r => [r.c.id, +r.total.toFixed(3)]));
   S.result = { conf: conf.level, flags: conf.validity.flags, hidden: res.hidden.length };
+  S.resultAt ||= Date.now();
   save();
 
   const card = (r, i) => {
@@ -48,7 +55,7 @@ export function result(app, { go }) {
       !conf.flat && h("div", { class: "why" }, up.map(x => reasonRow("up", x)), down.map(x => reasonRow("down", x))),
       h("div", { class: "actions", style: "margin-top:14px" },
         h("button", { class: "btn btn--ghost", style: "padding:10px 18px;font-size:14px", onclick: () => go("card", r.c.id) },
-          t("open_card") + (r.c.salary ? " · NPV, IRR" : "") + " →")));
+          t("open_card") + (wageOf(r.c) ? " · NPV, IRR" : "") + " →")));
   };
   const ent = entAdvice(res.visible.slice(0, 3), getLang());
   const all = h("details", { class: "card", style: "margin-top:14px" },
@@ -77,8 +84,41 @@ export function result(app, { go }) {
         h("div", {}, h("b", {}, (ent.shared && i === 0 ? "🥇 " : "• ") + e.subj),
           h("div", { class: "muted" }, e.profs.join(" · ")),
           e.verify && h("div", { class: "muted", style: "font-size:12px" }, t("ent_verify")))))),
+    prevBlock(res),
+    feedbackBlock(),
+    h("p", { class: "note-us", style: "margin-top:18px" }, t("method_note")),
     h("div", { class: "actions" },
       h("button", { class: "btn btn--primary btn--block", onclick: () => go("share") }, t("next") + " →"))));
+}
+
+/* Ретест: алдыңғы өтудің үздік үштігімен салыстыру (тұрақтылық тексерісі) */
+function prevBlock(res) {
+  const prev = S.prev;
+  if (!prev?.top3?.length) return null;
+  const now = res.visible.slice(0, 3).map(r => r.c.id);
+  const same = prev.top3.filter(id => now.includes(id));
+  const days = Math.max(0, Math.round((Date.now() - prev.at) / 864e5));
+  S.retest = { overlap: same.length, top1Same: prev.top3[0] === now[0], days }; save();
+  return h("div", { class: "card", style: "margin-top:18px" }, h("h2", {}, "🔁 " + t("prev_t")),
+    same.length ? h("p", { style: "margin:0" }, t("prev_same").replace("{n}", days).replace("{x}", same.map(id => L(byId(id).name)).join(", ")))
+      : h("p", { style: "margin:0" }, t("prev_none")),
+    h("div", { class: "muted", style: "margin-top:6px" }, `${same.length} / 3`));
+}
+
+/* Пилоттық сауалнама: нәтиже оқушыға ұқсай ма, жаңа нәрсе білді ме */
+function feedbackBlock() {
+  const fb = S.feedback ||= {};
+  const box = h("div", { class: "card", style: "margin-top:18px" });
+  const paint = () => box.replaceChildren(
+    h("h3", {}, t("fb_t")),
+    h("div", { class: "chips" }, t("fb_scale").map((l, i) =>
+      h("button", { class: "chip" + (fb.like === i + 1 ? " on" : ""), onclick: () => { fb.like = i + 1; fb.at = Date.now(); save(); paint(); } }, l))),
+    h("h3", { style: "margin-top:14px" }, t("fb_new")),
+    h("div", { class: "chips" }, [["yes", t("fb_yes")], ["bit", t("fb_bit")], ["no", t("fb_no")]].map(([k, l]) =>
+      h("button", { class: "chip" + (fb.new === k ? " on" : ""), onclick: () => { fb.new = k; fb.at = Date.now(); save(); paint(); } }, l))),
+    fb.like && fb.new ? h("p", { class: "muted", style: "margin:10px 0 0" }, t("fb_ok")) : "");
+  paint();
+  return box;
 }
 
 /* ---------- Кумулятивтік дисконтталған ағын графигі ---------- */
@@ -100,13 +140,18 @@ function chart(curve) {
   return svg;
 }
 
+/* Жалақы: ҰСБ-ның нақты жалақысы болса — сол, әйтпесе hh.kz вакансиялары.
+   Жұмысқа орналасу: мамандық бойынша дерек болса — сол, әйтпесе жалпы модель. */
+const wageOf = c => c.kz?.salaryBns ?? c.salary;
+const employOf = c => c.kz?.employ == null ? undefined : (c.kz.employ > 1 ? c.kz.employ / 100 : c.kz.employ);
+
 function econBlock(c) {
-  const wMonth = c.salary * regionK(S.about.region);
+  const wMonth = wageOf(c) * regionK(S.about.region), pEmp = employOf(c);
   const paths = [["grant", t("p_grant")], ["paid", t("p_paid")], ["private", t("p_private")]];
   let cur = S.about.budget === "paid" ? "paid" : "grant";
   const body = h("div"), tabs = h("div", { class: "tabs" });
   function paint() {
-    const a = analyse({ wMonth, tuition: TUITION[cur] }), mc = monteCarlo({ wMonth, tuition: TUITION[cur] });
+    const a = analyse({ wMonth, tuition: TUITION[cur], pEmp }), mc = monteCarlo({ wMonth, tuition: TUITION[cur], pEmp });
     tabs.replaceChildren(...paths.map(([k, label]) => h("button", { class: k === cur ? "on" : "", onclick: () => { cur = k; paint(); } }, label)));
     const dppTxt = a.dpp ? `${a.dpp.toFixed(1).replace(".", ",")} ${t("c_years")}` : t("c_never");
     body.replaceChildren(
@@ -135,6 +180,6 @@ export function card(app, { go, arg }) {
     h("h1", { class: "title" }, `${c.emoji} ${L(c.name)}`),
     pillars(r), h("div", { style: "margin-top:16px" }, preview(c)),
     reactBlock(c.id, () => go("result")),
-    c.salary ? econBlock(c) : h("div", { class: "banner banner--info", style: "margin-top:16px" }, t("no_salary_econ")),
+    wageOf(c) ? econBlock(c) : h("div", { class: "banner banner--info", style: "margin-top:16px" }, t("no_salary_econ")),
     h("p", { class: "muted", style: "margin-top:14px;font-size:12px" }, t("src_note"))));
 }

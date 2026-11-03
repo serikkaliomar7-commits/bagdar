@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bağdar — админ</title>
 <link rel="stylesheet" href="css/app.css">
 <style>
@@ -36,9 +36,12 @@
       <h1 class="title" style="margin:0;flex:1">Клиенты</h1>
       <input id="q" class="input" style="max-width:240px;margin:0" placeholder="Поиск: регион, отзыв…">
       <button id="csv" class="btn btn--ghost">⬇ CSV</button>
+      <button id="items" class="btn btn--ghost" title="Ответы по заданиям — для калибровки">⬇ Ответы</button>
       <button id="reload" class="btn btn--ghost">↻</button>
     </div>
     <div id="stats" class="stats"></div>
+    <h2 style="margin:6px 0 0">Проверка теста (пилот)</h2>
+    <div id="vstats" class="stats"></div>
     <div class="tbl-wrap"><table class="adm"><thead><tr>
       <th>Дата</th><th>Класс</th><th>Регион</th><th>Шаг</th><th>Топ-3</th><th>ИИ</th><th>Родитель</th><th>Отзыв</th>
     </tr></thead><tbody id="rows"></tbody></table></div>
@@ -46,83 +49,6 @@
 </main>
 <dialog id="dlg"><div class="in" id="dlg-in"></div></dialog>
 
-<script type="module">
-import { byId } from "./js/engine.js";
-import { REGIONS } from "./js/data/filters.js";
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const date = t => t ? new Date(t * 1000).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" }) : "—";
-const reg = id => REGIONS.find(r => r.id === id)?.ru || id || "—";
-const prof = id => byId(id) ? `${byId(id).emoji} ${byId(id).name.ru}` : id;
-const PRICE_IN = 4 / 1e6, PRICE_OUT = 20 / 1e6;   // claude-opus-5-5, $ за токен
-let TOKEN = sessionStorage.getItem("bagdar.admin") || "", DATA = [];
-
-async function api(path) {
-  const r = await fetch("/api/admin" + path, { headers: { Authorization: "Bearer " + TOKEN } });
-  if (r.status === 401) throw new Error("Неверный токен");
-  if (!r.ok) throw new Error("Ошибка " + r.status);
-  return r.json();
-}
-async function load() {
-  try { DATA = await api("/sessions"); }
-  catch (e) { $("err").textContent = e.message; $("login").hidden = false; $("panel").hidden = true; return; }
-  sessionStorage.setItem("bagdar.admin", TOKEN);
-  $("login").hidden = true; $("panel").hidden = false; render();
-}
-function render() {
-  const q = $("q").value.trim().toLowerCase();
-  const rows = DATA.filter(d => !q || JSON.stringify([reg(d.region), d.review_text, d.top3.map(prof)]).toLowerCase().includes(q));
-  const done = DATA.filter(d => ["result", "share"].includes(d.step)).length;
-  const rated = DATA.filter(d => d.review_rating);
-  const tin = DATA.reduce((s, d) => s + d.tokens_in, 0), tout = DATA.reduce((s, d) => s + d.tokens_out, 0);
-  const ivN = DATA.filter(d => d.interview_done).length;
-  const cost = tin * PRICE_IN + tout * PRICE_OUT;
-  const stat = (v, l) => `<div class="kpi"><div class="kpi__v">${v}</div><div class="kpi__l">${l}</div></div>`;
-  $("stats").innerHTML =
-    stat(DATA.length, "всего сессий") +
-    stat(DATA.length ? Math.round(done / DATA.length * 100) + "%" : "—", "дошли до результата") +
-    stat(rated.length ? (rated.reduce((s, d) => s + d.review_rating, 0) / rated.length).toFixed(1) + " ⭐" : "—", `средняя оценка (${rated.length})`) +
-    stat(DATA.filter(d => d.parent).length, "родителей ответили") +
-    stat("$" + cost.toFixed(2), "расход на ИИ") +
-    stat(ivN ? "$" + (cost / ivN).toFixed(3) : "—", "за одно интервью");
-  $("rows").innerHTML = rows.map(d => `<tr data-id="${esc(d.id)}">
-    <td>${date(d.created_at)}</td><td>${esc(d.grade ?? "—")}</td><td>${esc(reg(d.region))}</td>
-    <td><span class="pill ${["result", "share"].includes(d.step) ? "pill--ok" : ""}">${esc(d.step || "—")}</span></td>
-    <td>${d.top3.map(id => esc(prof(id))).join("<br>") || "—"}</td>
-    <td>${d.interview_done ? "✓" : ""}</td><td>${d.parent ? "✓" : ""}</td>
-    <td>${d.review_rating ? "⭐".repeat(d.review_rating) + "<br><span class='muted'>" + esc(d.review_text) + "</span>" : ""}</td></tr>`).join("")
-    || `<tr><td colspan="8" class="muted">Пока пусто</td></tr>`;
-}
-async function open(id) {
-  const d = await api("/session/" + encodeURIComponent(id));
-  const iv = d.interview?.messages?.slice(1) || [];
-  $("dlg-in").innerHTML = `
-    <div style="display:flex;justify-content:space-between"><h2>Сессия ${esc(d.id)}</h2><button class="btn btn--ghost" onclick="dlg.close()">✕</button></div>
-    <p class="muted">Создана ${date(d.created_at)} · обновлена ${date(d.updated_at)} · ${esc(reg(d.region))} · ${esc(d.grade ?? "—")} класс</p>
-    ${d.review_rating ? `<div class="banner banner--info">${"⭐".repeat(d.review_rating)} ${esc(d.review_text)}</div>` : ""}
-    ${iv.length ? `<h3>ИИ-интервью</h3><div class="msgs chat">${iv.map(m => m.role === "user"
-        ? `<div class="msg msg--me">${esc(m.content)}</div>`
-        : `<div class="msg msg--ai">${esc((() => { try { return JSON.parse(m.content).reply; } catch { return m.content; } })())}</div>`).join("")}</div>
-      ${Object.keys(d.interview.adj || {}).length ? `<h3>Корректировки от интервью</h3><pre>${esc(JSON.stringify(d.interview.adj, null, 2))}</pre>` : ""}` : ""}
-    ${d.parent ? `<h3>Родитель</h3><pre>${esc(JSON.stringify(d.parent, null, 2))}</pre>` : ""}
-    <h3>Полное состояние теста</h3><pre>${esc(JSON.stringify(d.state, null, 2))}</pre>`;
-  $("dlg").showModal();
-}
-function csv() {
-  const head = ["id", "created", "grade", "region", "step", "budget", "top1", "top2", "top3", "interview", "parent", "rating", "review", "tokens_in", "tokens_out"];
-  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = DATA.map(d => [d.id, date(d.created_at), d.grade, reg(d.region), d.step, d.budget, ...[0, 1, 2].map(i => d.top3[i] ? byId(d.top3[i])?.name.ru : ""),
-    d.interview_done ? 1 : 0, d.parent ? 1 : 0, d.review_rating, d.review_text, d.tokens_in, d.tokens_out].map(q).join(","));
-  const blob = new Blob(["﻿" + [head.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
-  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `bagdar-${new Date().toISOString().slice(0, 10)}.csv` });
-  a.click(); URL.revokeObjectURL(a.href);
-}
-$("go").onclick = () => { TOKEN = $("tok").value.trim(); load(); };
-$("tok").onkeydown = e => e.key === "Enter" && $("go").onclick();
-$("reload").onclick = load; $("csv").onclick = csv; $("q").oninput = render;
-$("rows").onclick = e => { const tr = e.target.closest("tr[data-id]"); if (tr) open(tr.dataset.id); };
-window.dlg = $("dlg");
-if (TOKEN) load();
-</script>
+<script type="module" src="js/admin.js"></script>
 </body>
 </html>

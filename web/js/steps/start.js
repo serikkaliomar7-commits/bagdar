@@ -45,7 +45,8 @@ export function about(app, { go }) {
       h("label", { class: "card", style: "display:flex;gap:12px;margin-top:24px;cursor:pointer;align-items:flex-start" },
         h("input", { type: "checkbox", checked: !!a.consent, style: "margin-top:4px;width:20px;height:20px",
                      onchange: e => set("consent", e.target.checked) }),
-        h("span", {}, h("b", {}, t("consent")), h("br"), h("span", { class: "muted" }, t("consent_note")))),
+        h("span", {}, h("b", {}, t("consent")), h("br"), h("span", { class: "muted" }, t("consent_note") + " "),
+          h("a", { href: "#/privacy" }, t("priv_read")))),
       h("div", { class: "actions" },
         h("button", { class: "btn btn--primary btn--block", disabled: !ok, onclick: async () => {
           try { await startSession(getLang()); } catch (e) { console.warn(e); }

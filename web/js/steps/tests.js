@@ -1,10 +1,11 @@
 /* 3. Қызығушылық (O*NET IP, бейімделгіш) · 4. Қабілет (CAT) · 5. «Маған келмейді» сүзгісі */
 import { S, save } from "../state.js";
-import { t, L } from "../i18n.js";
+import { t, L, getLang } from "../i18n.js";
 import { h, screen, shuffle } from "../ui.js";
 import { SCALE, ATTENTION } from "../data/interest_items.js";
 import { DOMAINS, clericalPair } from "../data/ability_items.js";
 import { DEALBREAKERS } from "../data/filters.js";
+import { VALUES } from "../data/values.js";
 import { nextInterestItem, domainLabel } from "../engine.js";
 import * as CAT from "../cat.js";
 
@@ -111,7 +112,8 @@ export function abilities(app, ctx) {
 
   function finish(choice) {
     if (done) return; done = true; clearInterval(iv);
-    const rec = { level: item.level, correct: choice === item.a, options: item.options, ms: Math.round(performance.now() - t0) };
+    // tpl — тапсырма үлгісі: пилоттан кейін әр үлгінің нақты қиындығы калибрленеді (research/calibrate.py)
+    const rec = { level: item.level, tpl: item.tpl, correct: choice === item.a, options: item.options, ms: Math.round(performance.now() - t0) };
     st.log.push(rec); st.used.push(JSON.stringify(item.q));
     CAT.update(d, rec);
     if (CAT.done(d)) Object.assign(st, CAT.estimate(d), { done: true });
@@ -176,7 +178,7 @@ export function dealbreakers(app, ctx) {
   const sel = new Set(S.dealbreakers);
   const grid = h("div", { class: "chips", style: "margin-top:18px" });
   const btn = h("button", { class: "btn btn--primary btn--block", onclick: () => {
-    S.dealbreakers = [...sel]; S.dealbreakersDone = true; save(); ctx.go("interview"); } });
+    S.dealbreakers = [...sel]; S.dealbreakersDone = true; save(); ctx.go("values"); } });
   const paint = () => {
     grid.replaceChildren(...DEALBREAKERS.map(d =>
       h("button", { class: "chip" + (sel.has(d.id) ? " on" : ""), onclick: () => { sel.has(d.id) ? sel.delete(d.id) : sel.add(d.id); paint(); } },
@@ -188,4 +190,35 @@ export function dealbreakers(app, ctx) {
     h("h1", { class: "title" }, t("db_t")), h("p", { class: "lead" }, t("db_l")), grid,
     h("p", { class: "muted", style: "margin-top:14px" }, t("db_note")),
     h("div", { class: "actions" }, btn)));
+}
+
+/* =========================================================
+   5б. ҚҰНДЫЛЫҚТАР — 6 карточканы маңыздылығы бойынша реттеу (≈1 мин).
+   O*NET Work Importance Locator-дағы карточка сұрыптау идеясы.
+   ========================================================= */
+export function values(app, ctx) {
+  const order = [...(S.values || [])];
+  const grid = h("div", { class: "values" });
+  const hint = h("p", { class: "muted", style: "margin:12px 0 0" });
+  const btn = h("button", { class: "btn btn--primary btn--block", onclick: () => {
+    S.values = order; S.valuesDone = true; save(); ctx.go("interview"); } });
+  const paint = () => {
+    grid.replaceChildren(...VALUES.map(v => {
+      const i = order.indexOf(v.id);
+      return h("button", { class: "value" + (i >= 0 ? " on" : ""), onclick: () => {
+          i >= 0 ? order.splice(i, 1) : order.push(v.id); paint(); } },
+        h("span", { class: "value__n" }, i >= 0 ? i + 1 : v.e),
+        h("span", {}, h("b", {}, L(v)), h("br"), h("span", { class: "muted" }, getLang() === "kk" ? v.dkk : v.dru)));
+    }));
+    const left = VALUES.length - order.length;
+    hint.textContent = left ? t("val_left").replace("{n}", left) : "";
+    btn.disabled = left > 0;
+    btn.textContent = t("next") + " →";
+  };
+  paint();
+  app.append(screen(
+    h("h1", { class: "title" }, t("val_t")), h("p", { class: "lead" }, t("val_l")), grid, hint,
+    h("div", { class: "actions" }, btn,
+      h("button", { class: "btn btn--ghost", onclick: () => { order.length = 0; paint(); } }, "↺ " + t("val_reset"))),
+    h("p", { class: "muted", style: "margin-top:16px;font-size:12px" }, t("val_src"))));
 }

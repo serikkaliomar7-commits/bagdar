@@ -3,7 +3,7 @@
    Rounds, Su, Lewis & Rivkin (2010), U.S. DOL, CC BY 4.0.
    Сенімділік (түпнұсқа): Кронбах α = .78–.87 (M = .81, N = 1061),
    ретест r = .78–.86 (M = .82, N = 132).
-   Аудармасы мен мәдени бейімделуі — Bağdar; (*) — бейімделген тармақ.
+   Аудармасы мен мәдени бейімделуі — Bağdar; orig — бейімделген тармақтың O*NET түпнұсқасы.
    ========================================================= */
 export const ITEMS = [
   // R — Practical / Realistic
@@ -14,9 +14,9 @@ export const ITEMS = [
   { id: "R5", t: "R", en: "Assemble electronic parts", kk: "Электрондық бөлшектерді құрастыру", ru: "Собирать электронные детали" },
   { id: "R6", t: "R", en: "Drive a truck to deliver packages", kk: "Жүк көлігімен сәлемдеме тасымалдау", ru: "Развозить посылки на грузовике" },
   { id: "R7", t: "R", en: "Test the quality of parts before shipment", kk: "Бөлшектердің сапасын жөнелту алдында тексеру", ru: "Проверять качество деталей перед отправкой" },
-  { id: "R8", t: "R", en: "Repair and install locks", kk: "Құлыптарды жөндеу және орнату", ru: "Чинить и устанавливать замки" },
+  { id: "R8", t: "R", orig: "Repair and install locks", en: "Repair cars", kk: "Көлік жөндеу", ru: "Ремонтировать автомобили" },
   { id: "R9", t: "R", en: "Set up and operate machines to make products", kk: "Зауытта станоктарды баптап, басқару", ru: "Настраивать станки на заводе" },
-  { id: "R10", t: "R", en: "Put out forest fires", kk: "Орман өрттерін сөндіру", ru: "Тушить лесные пожары" },
+  { id: "R10", t: "R", orig: "Put out forest fires", en: "Put out fires", kk: "Өрт сөндіру", ru: "Тушить пожары" },
   // I — Investigative
   { id: "I1", t: "I", en: "Develop a new medicine", kk: "Жаңа дәрі ойлап табу", ru: "Разрабатывать новое лекарство" },
   { id: "I2", t: "I", en: "Study ways to reduce water pollution", kk: "Судың ластануын азайту жолдарын зерттеу", ru: "Изучать, как уменьшить загрязнение воды" },
@@ -26,7 +26,7 @@ export const ITEMS = [
   { id: "I6", t: "I", en: "Investigate the cause of a fire", kk: "Өрттің себебін анықтау", ru: "Выяснять причину пожара" },
   { id: "I7", t: "I", en: "Develop a way to better predict the weather", kk: "Ауа райын дәлірек болжау әдісін жасау", ru: "Придумать, как точнее предсказывать погоду" },
   { id: "I8", t: "I", en: "Work in a biology lab", kk: "Биология зертханасында жұмыс істеу", ru: "Работать в биологической лаборатории" },
-  { id: "I9", t: "I", en: "Invent a replacement for sugar", kk: "Қанттың орнын басатын зат ойлап табу", ru: "Изобрести заменитель сахара" },
+  { id: "I9", t: "I", orig: "Invent a replacement for sugar", en: "Create new food products in a lab", kk: "Зертханада жаңа тағам өнімдерін жасау", ru: "Создавать в лаборатории новые продукты питания" },
   { id: "I10", t: "I", en: "Do laboratory tests to identify diseases", kk: "Ауруды анықтау үшін зертханалық талдау жасау", ru: "Делать анализы, чтобы выявить болезнь" },
   // A — Artistic
   { id: "A1", t: "A", en: "Write books or plays", kk: "Кітап немесе пьеса жазу", ru: "Писать книги или пьесы" },
@@ -36,7 +36,7 @@ export const ITEMS = [
   { id: "A5", t: "A", en: "Create special effects for movies", kk: "Фильмдерге арнайы эффектілер жасау", ru: "Делать спецэффекты для фильмов" },
   { id: "A6", t: "A", en: "Paint sets for plays", kk: "Спектакльге декорация салу", ru: "Рисовать декорации для спектаклей" },
   { id: "A7", t: "A", en: "Write scripts for movies or television shows", kk: "Фильм не телешоуға сценарий жазу", ru: "Писать сценарии для фильмов и шоу" },
-  { id: "A8", t: "A", en: "Perform jazz or tap dance (*)", kk: "Сахнада би билеу", ru: "Танцевать на сцене" },
+  { id: "A8", t: "A", orig: "Perform jazz or tap dance", en: "Dance on stage", kk: "Сахнада би билеу", ru: "Танцевать на сцене" },
   { id: "A9", t: "A", en: "Sing in a band", kk: "Музыкалық топта ән айту", ru: "Петь в музыкальной группе" },
   { id: "A10", t: "A", en: "Edit movies", kk: "Фильм монтаждау", ru: "Монтировать видео и фильмы" },
   // S — Social
@@ -69,9 +69,9 @@ export const ITEMS = [
   { id: "C5", t: "C", en: "Keep shipping and receiving records", kk: "Тауардың келуі мен жөнелтілуін есепке алу", ru: "Вести учёт приёма и отправки товаров" },
   { id: "C6", t: "C", en: "Calculate the wages of employees", kk: "Қызметкерлердің жалақысын есептеу", ru: "Рассчитывать зарплату сотрудникам" },
   { id: "C7", t: "C", en: "Inventory supplies using a hand-held computer", kk: "Қоймадағы тауарды сканермен түгендеу", ru: "Пересчитывать товар на складе сканером" },
-  { id: "C8", t: "C", en: "Record rent payments", kk: "Жалдау төлемдерін тіркеу", ru: "Записывать арендные платежи" },
+  { id: "C8", t: "C", orig: "Record rent payments", en: "Keep records of customer payments", kk: "Клиенттердің төлемдерін есепке алу", ru: "Вести учёт оплат клиентов" },
   { id: "C9", t: "C", en: "Keep inventory records", kk: "Қойма есебін жүргізу", ru: "Вести складской учёт" },
-  { id: "C10", t: "C", en: "Stamp, sort, and distribute mail", kk: "Мекеменің хаттарын сұрыптап, тарату", ru: "Сортировать и разносить почту в организации" },
+  { id: "C10", t: "C", orig: "Stamp, sort, and distribute mail", en: "Register and route documents in an office", kk: "Мекемеде құжаттарды тіркеп, жөнелту", ru: "Регистрировать и рассылать документы в организации" },
 ];
 
 /* Зейінді тексеретін тармақтар (жауабы алдын ала белгілі) */

@@ -4,6 +4,7 @@ import { S, save, interviewTurn } from "../state.js";
 import { t, getLang, L } from "../i18n.js";
 import { h, screen } from "../ui.js";
 import { score, archetype, domainLabel } from "../engine.js";
+import { VALUES } from "../data/values.js";
 
 export function interview(app, { go }) {
   const iv = S.interview;
@@ -41,6 +42,7 @@ export function interview(app, { go }) {
           tied: res.tied, types: archetype(res.profile),
           strong: [...new Set(top.slice(0, 3).flatMap(r => r.strong.map(d => L(domainLabel(d)))))],
           weak: [...new Set(top.slice(0, 3).flatMap(r => r.weak.map(d => L(domainLabel(d)))))],
+          values: (S.values || []).slice(0, 3).map(id => VALUES.find(v => v.id === id)?.ru).filter(Boolean),
         };
       }
       const r = await interviewTurn({ sid: S.sid, lang: getLang(), context, message });
@@ -72,6 +74,8 @@ export function interview(app, { go }) {
     h("span", { class: "eyebrow" }, "🤖 AI"),
     h("h1", { class: "title" }, t("iv_t")),
     h("p", { class: "lead" }, t("iv_l")),
+    h("div", { class: "banner banner--warn", style: "margin-bottom:14px;font-size:13.5px" }, "🔒 " + t("iv_privacy") + " ",
+      h("a", { href: "#/privacy" }, t("priv_link"))),
     counter, chat, composer, footer));
 
   if (!S.sid) return fail();

@@ -83,7 +83,10 @@ export function monteCarlo(opts, n = 5000) {
   const out = new Float64Array(n);
   for (let i = 0; i < n; i++) {
     const w = Math.max(P.wSchool, opts.wMonth + gauss() * sd);
-    const p = P.pEmpLow + Math.random() * (P.pEmp - P.pEmpLow);
+    // Мамандық бойынша жұмысқа орналасу белгілі болса — соның айналасында (±), әйтпесе жалпы диапазон
+    const lo = opts.pEmp != null ? Math.max(0.05, opts.pEmp - 0.15) : P.pEmpLow;
+    const hi = opts.pEmp != null ? Math.min(1, opts.pEmp + 0.10) : P.pEmp;
+    const p = lo + Math.random() * (hi - lo);
     const g = Math.max(0, P.gReal + gauss() * 0.01);
     out[i] = npv(cashFlows({ ...opts, wMonth: w, pEmp: p, g }), P.rReal);
   }

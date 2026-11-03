@@ -8,7 +8,9 @@ Bağdar сервері: сайт + деректер қоры + ЖИ-сұхбат
 """
 from __future__ import annotations
 
+import csv
 import hmac
+import io
 import json
 import os
 import re
@@ -21,7 +23,7 @@ from typing import List, Optional
 
 import anthropic
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -33,6 +35,9 @@ MAX_STATE_BYTES = 200_000
 MAX_ANSWER_CHARS = 1000
 INTERVIEW_QUESTIONS = 5          # 3 ортақ + 2 нысаналы
 INTERVIEW_MAX_CALLS = 12         # API-ді теріс пайдаланудан қорғау
+RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "365"))   # соңғы әрекеттен кейін өшіру
+ADMIN_IPS = {ip.strip() for ip in os.environ.get("ADMIN_IPS", "").split(",") if ip.strip()}  # бос — шектеу жоқ
+ADMIN_MIN_TOKEN = 24             # қысқа токенмен әкімші панелі мүлде ашылмайды
 
 # web/js/data/careers.js-тегі id-лермен бірдей болуы керек (research/build_professions.py)
 PROFESSION_IDS = ["civil", "electrical", "mechanical", "petroleum", "mining", "pilot", "agro", "vet", "chef", "geologist", "architect", "backend", "ml", "cyber", "doctor", "dentist", "pharmacist", "biochem", "chemist", "ecologist", "economist", "designer", "gamedev", "graphic", "interior", "journalist", "director", "translator", "teacher", "primary", "psych", "nurse", "social", "coach", "speech", "physio", "lawyer", "marketing", "market_an", "pm", "hr", "sales", "finance", "hotel", "manager", "logist", "accountant", "banker"]
@@ -65,6 +70,21 @@ with db() as c:
         tokens_in INTEGER DEFAULT 0, tokens_out INTEGER DEFAULT 0,
         parent TEXT,                      -- ата-ана жауаптары (JSON)
         review_rating INTEGER, review_text TEXT, review_at REAL)""")
+    cols = {r[1] for r in c.execute("PRAGMA table_info(sessions)")}
+    for col, typ in (("expert_token", "TEXT"), ("expert", "TEXT")):   # маман сілтемесі (соқыр салыстыру)
+        if col not in cols:
+            c.execute(f"ALTER TABLE sessions ADD COLUMN {col} {typ}")
+    c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_expert ON sessions(expert_token)")
+
+
+def purge_old():
+    """Сақтау мерзімі өткен сессияларды біржола өшіру (құпиялылық саясаты)."""
+    with db() as c:
+        c.execute("DELETE FROM sessions WHERE updated_at < ?", (time.time() - RETENTION_DAYS * 86400,))
+
+
+purge_old()
+_last_purge = time.time()
 
 
 def get_session(con, sid: str):
@@ -81,11 +101,21 @@ class NewSession(BaseModel):
 
 @app.post("/api/session")
 def create_session(body: NewSession):
-    sid, ptok, now = secrets.token_urlsafe(12), secrets.token_urlsafe(12), time.time()
+    sid, ptok, etok, now = (secrets.token_urlsafe(12), secrets.token_urlsafe(12),
+                            secrets.token_urlsafe(12), time.time())
     with db() as c:
-        c.execute("INSERT INTO sessions (id, parent_token, created_at, updated_at, lang) VALUES (?,?,?,?,?)",
-                  (sid, ptok, now, now, body.lang))
-    return {"id": sid, "parent_token": ptok}
+        c.execute("INSERT INTO sessions (id, parent_token, expert_token, created_at, updated_at, lang) VALUES (?,?,?,?,?,?)",
+                  (sid, ptok, etok, now, now, body.lang))
+    return {"id": sid, "parent_token": ptok, "expert_token": etok}
+
+
+@app.delete("/api/session/{sid}")
+def delete_session(sid: str):
+    """Оқушы өз деректерін біржола жояды. sid — тек оның браузерінде сақталатын құпия кілт."""
+    with db() as c:
+        if not c.execute("DELETE FROM sessions WHERE id = ?", (sid,)).rowcount:
+            raise HTTPException(404, "session not found")
+    return {"ok": True}
 
 
 @app.put("/api/session/{sid}")
@@ -177,6 +207,7 @@ class InterviewContext(BaseModel):
     types: List[str] = Field(default_factory=list, max_length=6)  # жетекші RIASEC типтері
     strong: List[str] = Field(default_factory=list, max_length=8)
     weak: List[str] = Field(default_factory=list, max_length=8)
+    values: List[str] = Field(default_factory=list, max_length=6)  # маңызды құндылықтар (реті бойынша)
 
 
 class InterviewTurn(BaseModel):
@@ -187,6 +218,19 @@ class InterviewTurn(BaseModel):
 
 
 LANG_NAME = {"kk": "Kazakh", "ru": "Russian", "en": "English"}
+
+# Сыртқы ЖИ-ге жібермес бұрын жеке деректерді жасыру: пошта, сілтеме, ЖСН (12 сан), телефон
+PII = [(re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[email]"),
+       (re.compile(r"https?://\S+|www\.\S+", re.I), "[link]"),
+       (re.compile(r"(?<!\d)\d{12}(?!\d)"), "[id]"),
+       (re.compile(r"(?<![\w])(?:\+?7|8)[\s(-]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}(?!\d)"), "[phone]"),
+       (re.compile(r"@[A-Za-z0-9_.]{3,}"), "[account]")]
+
+
+def scrub(text: str) -> str:
+    for rx, repl in PII:
+        text = rx.sub(repl, text)
+    return text
 norm = lambda s: re.sub(r"\s+", " ", s).strip().lower()
 
 
@@ -198,6 +242,7 @@ def summary(ctx: InterviewContext, lang: str) -> str:
             f"Dominant Holland types: {', '.join(ctx.types) or 'unclear'}\n"
             f"Abilities above what top professions need: {', '.join(ctx.strong) or 'none'}\n"
             f"Abilities below what top professions need: {', '.join(ctx.weak) or 'none'}\n"
+            f"Most important work values (in order): {', '.join(ctx.values) or 'not given'}\n"
             "Begin the interview with question 1.")
 
 
@@ -219,7 +264,7 @@ def interview(turn: InterviewTurn):
         else:
             if not (turn.message or "").strip():
                 raise HTTPException(400, "empty message")
-            msgs.append({"role": "user", "content": turn.message.strip()})
+            msgs.append({"role": "user", "content": scrub(turn.message.strip())})
 
         answers = len(msgs) - 1                      # бірінші хабар — контекст
         final = answers >= INTERVIEW_QUESTIONS
@@ -288,12 +333,13 @@ def parent_view(ptok: str):
     st = json.loads(row["state"] or "{}")
     # Ата-анаға тек қорытынды көрсетіледі — жеке жауаптар емес
     return {"lang": row["lang"], "top3": st.get("top3", []), "fits": st.get("fits", {}),
+            "values": (st.get("values") or [])[:3],
             "parent": json.loads(row["parent"]) if row["parent"] else None}
 
 
 class ParentAnswers(BaseModel):
     expect: List[str] = Field(default_factory=list, max_length=3)
-    values: List[str] = Field(default_factory=list, max_length=5)
+    values: List[str] = Field(default_factory=list, max_length=6)
     note: str = Field("", max_length=1000)
 
 
@@ -309,19 +355,69 @@ def parent_save(ptok: str, body: ParentAnswers):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------- маман (соқыр салыстыру)
+@app.get("/api/expert/{etok}")
+def expert_view(etok: str):
+    with db() as c:
+        row = c.execute("SELECT state, expert, lang FROM sessions WHERE expert_token=?", (etok,)).fetchone()
+    if not row:
+        raise HTTPException(404, "not found")
+    st = json.loads(row["state"] or "{}")
+    expert = json.loads(row["expert"]) if row["expert"] else None
+    # Маман тест нәтижесін өз пікірін жібергеннен кейін ғана көреді
+    return {"lang": row["lang"], "ready": bool(st.get("top3")), "expert": expert,
+            "top3": st.get("top3", []) if expert else []}
+
+
+class ExpertAnswers(BaseModel):
+    picks: List[str] = Field(default_factory=list, max_length=3)
+    confidence: Optional[int] = Field(None, ge=1, le=3)
+    note: str = Field("", max_length=1000)
+
+
+@app.post("/api/expert/{etok}")
+def expert_save(etok: str, body: ExpertAnswers):
+    picks = [p for p in body.picks if p in PROFESSION_IDS]
+    if not picks:
+        raise HTTPException(400, "no valid picks")
+    with db() as c:
+        row = c.execute("SELECT expert FROM sessions WHERE expert_token=?", (etok,)).fetchone()
+        if not row:
+            raise HTTPException(404, "not found")
+        if row["expert"]:
+            raise HTTPException(409, "already answered")     # соқыр бағалауды қайта жазуға болмайды
+        c.execute("UPDATE sessions SET expert=? WHERE expert_token=?",
+                  (json.dumps({"picks": picks, "confidence": body.confidence, "note": body.note.strip(),
+                               "at": time.time()}, ensure_ascii=False), etok))
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------- әкімші
-def require_admin(authorization: Optional[str]):
+_admin_fail: dict = {}               # IP → [сәтсіз әрекет уақыттары]
+ADMIN_MAX_FAILS, ADMIN_WINDOW = 5, 900
+
+
+def require_admin(request: Request, authorization: Optional[str]):
+    ip = request.client.host if request.client else "?"
+    if ADMIN_IPS and ip not in ADMIN_IPS:
+        raise HTTPException(403, "forbidden")
+    now = time.time()
+    fails = [t for t in _admin_fail.get(ip, []) if now - t < ADMIN_WINDOW]
+    if len(fails) >= ADMIN_MAX_FAILS:                    # құпиясөзді іріктеуден қорғау
+        raise HTTPException(429, "too many attempts, try later")
     token = (authorization or "").removeprefix("Bearer ").strip()
-    if not ADMIN_TOKEN or not hmac.compare_digest(token, ADMIN_TOKEN):
+    if len(ADMIN_TOKEN) < ADMIN_MIN_TOKEN or not hmac.compare_digest(token, ADMIN_TOKEN):
+        _admin_fail[ip] = fails + [now]
         raise HTTPException(401, "unauthorized")
+    _admin_fail.pop(ip, None)
 
 
 @app.get("/api/admin/sessions")
-def admin_list(authorization: Optional[str] = Header(None)):
-    require_admin(authorization)
+def admin_list(request: Request, authorization: Optional[str] = Header(None)):
+    require_admin(request, authorization)
     with db() as c:
         rows = c.execute("""SELECT id, created_at, updated_at, lang, grade, region, state,
-                            interview, tokens_in, tokens_out, parent,
+                            interview, tokens_in, tokens_out, parent, expert,
                             review_rating, review_text, review_at
                             FROM sessions ORDER BY created_at DESC""").fetchall()
     out = []
@@ -336,17 +432,49 @@ def admin_list(authorization: Optional[str] = Header(None)):
             "interview_done": bool(iv.get("done")), "tokens_in": r["tokens_in"], "tokens_out": r["tokens_out"],
             "parent": bool(r["parent"]),
             "review_rating": r["review_rating"], "review_text": r["review_text"],
+            # Валидация көрсеткіштері (пилот): ұқсастық, ретест, маманмен келісім
+            "feedback": st.get("feedback") or None, "retest": st.get("retest") or None,
+            "expert": json.loads(r["expert"]) if r["expert"] else None,
+            "conf": (st.get("result") or {}).get("conf"),
         })
     return out
 
 
+@app.get("/api/admin/export/items.csv")
+def admin_export(request: Request, authorization: Optional[str] = Header(None)):
+    """Тапсырма деңгейіндегі жауаптар (ұзын формат) — калибровка үшін (research/calibrate.py)."""
+    require_admin(request, authorization)
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["session", "block", "domain", "item", "level", "value", "correct", "options", "ms"])
+    with db() as c:
+        for r in c.execute("SELECT id, state FROM sessions"):
+            st = json.loads(r["state"] or "{}")
+            if not isinstance(st.get("abilities"), dict) or not isinstance(st.get("interests"), dict):
+                continue                                  # сайттың ескі нұсқасының сессиясы
+            for a in (st.get("interests") or {}).get("answers", []):
+                w.writerow([r["id"], "interest", a.get("t"), a.get("id"), "", a.get("v"), "", "", a.get("ms")])
+            for dom, d in (st.get("abilities") or {}).items():
+                if dom == "clerical":
+                    w.writerow([r["id"], "clerical", dom, "clerical45", "", d.get("rate"), d.get("right"), d.get("wrong"), ""])
+                    continue
+                for x in d.get("log", []):
+                    w.writerow([r["id"], "ability", dom, x.get("tpl", ""), x.get("level"), "",
+                                int(bool(x.get("correct"))), x.get("options"), x.get("ms")])
+            for pid, x in (st.get("rjp") or {}).items():
+                w.writerow([r["id"], "rjp", "", pid, "", x.get("reaction"), "", "", ""])
+    return Response(buf.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=bagdar-items.csv"})
+
+
 @app.get("/api/admin/session/{sid}")
-def admin_detail(sid: str, authorization: Optional[str] = Header(None)):
-    require_admin(authorization)
+def admin_detail(sid: str, request: Request, authorization: Optional[str] = Header(None)):
+    require_admin(request, authorization)
     with db() as c:
         r = get_session(c, sid)
     d = dict(r)
-    for k in ("state", "interview", "parent"):
+    d.pop("parent_token", None); d.pop("expert_token", None)   # сілтеме кілттерін панельде көрсетпейміз
+    for k in ("state", "interview", "parent", "expert"):
         d[k] = json.loads(d[k]) if d[k] else None
     return d
 
@@ -356,12 +484,30 @@ def admin_page():
     return RedirectResponse("/admin.html")
 
 
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+       "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
+       "base-uri 'none'; form-action 'self'")
+
+
 @app.middleware("http")
-async def revalidate_static(request: Request, call_next):
-    """Браузер JS-модульдердің ескі нұсқасын кэштен алмас үшін әр жолы тексереді."""
+async def headers_and_purge(request: Request, call_next):
+    """Қауіпсіздік тақырыптары + кэш + сағатына бір рет мерзімі өткен деректерді өшіру."""
+    global _last_purge
+    if time.time() - _last_purge > 3600:
+        _last_purge = time.time()
+        purge_old()
     resp = await call_next(request)
-    if not request.url.path.startswith("/api/"):
-        resp.headers["Cache-Control"] = "no-cache"
+    path = request.url.path
+    if not path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-cache"   # JS-модульдердің ескі нұсқасы кэштен алынбасын
+    else:
+        resp.headers["Cache-Control"] = "no-store"
+    resp.headers["Content-Security-Policy"] = CSP
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    if path.startswith("/admin"):
+        resp.headers["X-Robots-Tag"] = "noindex, nofollow"
     return resp
 
 

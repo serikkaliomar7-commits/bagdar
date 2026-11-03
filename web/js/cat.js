@@ -8,6 +8,8 @@
    Келесі тапсырма θ-ға ең жақын қиындықта беріледі (Раш үшін ақпарат максимумы).
    Қиындықтар — АЛДЫН АЛА калибровка; нақтысы пилоттық іріктемеде бағаланады.
    ========================================================= */
+import { CALIB } from "./data/calibration.js";
+
 const GRID = Array.from({ length: 81 }, (_, i) => -4 + i * 0.1);
 const prior = GRID.map(t => Math.exp(-t * t / 2));
 const sigmoid = z => 1 / (1 + Math.exp(-z));
@@ -16,8 +18,11 @@ export const levelToB = level => level - 3;
 
 export function newDomain() { return { post: prior.slice(), log: [] }; }
 
-export function update(d, { level, correct, options }) {
-  const b = levelToB(level), c = 1 / options;
+/* Пилоттан кейін әр үлгінің (tpl) нақты қиындығы белгілі болса — сол қолданылады */
+export const itemB = (level, tpl) => CALIB[tpl] ?? levelToB(level);
+
+export function update(d, { level, tpl, correct, options }) {
+  const b = itemB(level, tpl), c = 1 / options;
   d.post = d.post.map((p, i) => {
     const pc = c + (1 - c) * sigmoid(GRID[i] - b);
     return p * (correct ? pc : 1 - pc);

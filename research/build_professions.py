@@ -126,6 +126,17 @@ wa = by_scale(table("WorkActivities.txt"), "IM")
 jz = {r["O*NET-SOC Code"]: int(r["Job Zone"]) for r in table("JobZones.txt")}
 elo = {r["O*NET-SOC Code"]: float(r["human_rating_beta"]) for r in csv.DictReader(open(RAW / "occ_level.csv"))}
 fo = json.load(open(RAW / "FO.json"))
+# Жұмыс құндылықтары (O*NET Work Values, Extent 1–7; Dawis & Lofquist, 1984 — жұмысқа бейімделу теориясы)
+VALUES = ["Achievement", "Working Conditions", "Recognition", "Relationships", "Support", "Independence"]
+wv = by_scale(table("WorkValues.txt"), "EX")
+WV_FALLBACK = {"15-1252.00": "15-1251.00"}   # Software Developers үшін құндылық дерегі жоқ → Computer Programmers
+
+# ҚР деректері — команда қолмен толтырады (research/kz_careers.csv). Бос ұяшық = дерек жоқ.
+KZ_CSV = Path(__file__).parent / "kz_careers.csv"
+KZ_COLS = ["id", "name_ru", "salary_hh", "salary_bns", "employment_rate", "college_specialty",
+           "college_years_after9", "college_shortened_univ", "universities", "video_url", "sources"]
+kz = {r["id"]: r for r in csv.DictReader(open(KZ_CSV, encoding="utf-8"))} if KZ_CSV.exists() else {}
+num = lambda x: float(x.replace(" ", "").replace(",", ".")) if x and x.strip() else None
 
 # Жұмыс түрлерінің ерекшелігі: барлық кәсіптер бойынша z-баға
 wa_stats = {}
@@ -159,6 +170,9 @@ for (pid, soc, ab_soc, fo_soc, emoji, kk, ru, en, ent, verify, tags) in P:
     beta = elo.get(soc)
     risk = None if fo_p is None or beta is None else 0.5 * fo_p + 0.5 * beta
     sal = HH.get(pid)
+    k = kz.get(pid, {})
+    v_soc = next((x for x in (a_soc, soc, WV_FALLBACK.get(soc)) if x in wv), None)
+    values = [round((wv[v_soc][v] - 1) / 6, 3) for v in VALUES] if v_soc else None
     out.append({
         "id": pid, "soc": soc, "abilitySoc": a_soc, "emoji": emoji,
         "name": {"kk": kk, "ru": ru, "en": en},
@@ -169,15 +183,29 @@ for (pid, soc, ab_soc, fo_soc, emoji, kk, ru, en, ent, verify, tags) in P:
                    "risk": None if risk is None else round(risk, 3)},
         "ent": {"kk": ent, "ru": RU[ent], "verify": bool(verify)},
         "salary": sal[0] if sal else None, "n": sal[1] if sal else None,
+        "values": values,
+        "kz": {kk_: v for kk_, v in {
+            "salaryBns": num(k.get("salary_bns")), "employ": num(k.get("employment_rate")),
+            "college": (k.get("college_specialty") or "").strip() or None,
+            "collegeYears": num(k.get("college_years_after9")),
+            "shortened": (k.get("college_shortened_univ") or "").strip().lower() in ("да", "yes", "1", "иә"),
+            "univ": [u.strip() for u in (k.get("universities") or "").split(";") if u.strip()],
+            "video": (k.get("video_url") or "").strip() or None,
+            "sources": (k.get("sources") or "").strip() or None}.items() if v not in (None, [], False)},
     })
 
-missing = [p["id"] for p in out if p["future"]["risk"] is None]
+missing = [p["id"] for p in out if p["future"]["risk"] is None or p["values"] is None]
 assert not missing, f"future data missing: {missing}"
 src = ("/* АВТОМАТТЫ ТҮРДЕ ҚҰРАСТЫРЫЛҒАН — research/build_professions.py.\n"
        "   Қолмен өзгертпеңіз: дереккөз деректерін өзгертіп, скриптті қайта іске қосыңыз.\n"
        "   O*NET 30.0 (CC BY 4.0) · Frey & Osborne (2013) · Eloundou et al. (2023, MIT) · hh.kz (2026-09) */\n"
        f"export const CAREERS = {json.dumps(out, ensure_ascii=False, indent=1)};\n")
 OUT.write_text(src, encoding="utf-8")
+if not KZ_CSV.exists():                      # командаға толтыруға арналған бос үлгі
+    with open(KZ_CSV, "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f); w.writerow(KZ_COLS)
+        for p_ in out: w.writerow([p_["id"], p_["name"]["ru"], p_["salary"] or ""] + [""] * (len(KZ_COLS) - 3))
+    print(f"шаблон → {KZ_CSV.name}")
 print(f"{len(out)} мамандық → {OUT.relative_to(OUT.parents[2])}")
 for p in out:
     print(f"{p['id']:11s} RIASEC={''.join(t for t,v in sorted(zip('RIASEC',p['riasec']),key=lambda x:-x[1])[:3])} "

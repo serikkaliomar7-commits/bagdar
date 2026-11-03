@@ -20,20 +20,20 @@ function numOptions(ans, distractors, unit = "") {
 
 /* ---------------- ЛОГИКА: сандар тізбегі ---------------- */
 function seq(level) {
-  let s, ans, wrong;
+  let s, ans, wrong, tpl = "seq" + level;
   if (level === 1) { const a = R(1, 20), d = R(2, 9); s = [0, 1, 2, 3, 4].map(i => a + i * d); ans = a + 5 * d; wrong = [ans + d, ans - 1, ans + 2]; }
   else if (level === 2) {
-    if (Math.random() < .5) { const a = R(1, 6); s = [0, 1, 2, 3, 4].map(i => a * 2 ** i); ans = a * 32; wrong = [ans - a * 16 / 2, a * 16 + a * 8, ans + 2]; }
-    else { const a = R(15, 30), d = R(4, 8); s = [0, 1, 2, 3, 4].map(i => a - i * d); ans = a - 5 * d; wrong = [ans + d, ans - 1, -ans]; }
+    if (Math.random() < .5) { tpl = "seq2geo"; const a = R(1, 6); s = [0, 1, 2, 3, 4].map(i => a * 2 ** i); ans = a * 32; wrong = [ans - a * 16 / 2, a * 16 + a * 8, ans + 2]; }
+    else { tpl = "seq2dec"; const a = R(15, 30), d = R(4, 8); s = [0, 1, 2, 3, 4].map(i => a - i * d); ans = a - 5 * d; wrong = [ans + d, ans - 1, -ans]; }
   } else if (level === 3) { const a = R(1, 10), d = R(1, 4), st = R(1, 3); s = [a]; for (let i = 0; i < 4; i++) s.push(s[i] + d + i * st); ans = s[4] + d + 4 * st; wrong = [s[4] + d + 3 * st, ans + st, ans - 1]; }
   else if (level === 4) { const a = R(1, 9), p = R(2, 5), b = R(20, 40), q = R(2, 5); s = []; for (let i = 0; i < 6; i++) s.push(i % 2 ? b - Math.floor(i / 2) * q : a + (i / 2) * p); ans = a + 3 * p; wrong = [b - 3 * q, ans + p, s[5] - q]; }
   else {
-    if (Math.random() < .5) { const x = R(1, 5), y = R(2, 6); s = [x, y]; for (let i = 2; i < 6; i++) s.push(s[i - 1] + s[i - 2]); ans = s[4] + s[5]; wrong = [s[5] + (s[5] - s[4]), ans + 1, s[5] * 2]; }
-    else { const a = R(1, 3); s = [a]; for (let i = 1; i < 5; i++) s.push(s[i - 1] * 2 + 1); ans = s[4] * 2 + 1; wrong = [s[4] * 2, ans + 2, s[4] + (s[4] - s[3]) * 2 - 1]; }
+    if (Math.random() < .5) { tpl = "seq5fib"; const x = R(1, 5), y = R(2, 6); s = [x, y]; for (let i = 2; i < 6; i++) s.push(s[i - 1] + s[i - 2]); ans = s[4] + s[5]; wrong = [s[5] + (s[5] - s[4]), ans + 1, s[5] * 2]; }
+    else { tpl = "seq5dbl"; const a = R(1, 3); s = [a]; for (let i = 1; i < 5; i++) s.push(s[i - 1] * 2 + 1); ans = s[4] * 2 + 1; wrong = [s[4] * 2, ans + 2, s[4] + (s[4] - s[3]) * 2 - 1]; }
   }
   const { o, a } = numOptions(ans, wrong);
   const list = s.join(", ") + ", ?";
-  return { q: { kk: `Тізбекті жалғастыр: ${list}`, ru: `Продолжи ряд: ${list}` }, o, a };
+  return { q: { kk: `Тізбекті жалғастыр: ${list}`, ru: `Продолжи ряд: ${list}` }, o, a, tpl };
 }
 
 /* ---------------- САНДАР: мәтінді есептер ---------------- */
@@ -126,7 +126,7 @@ function verbal(level, used) {
   const v = best.length ? pick(best) : pool.sort((x, y) => Math.abs(x.l - level) - Math.abs(y.l - level))[0];
   used.add(v);
   const order = shuffle(v.o.map((_, i) => i));
-  return { q: v.q, o: order.map(i => v.o[i]), a: order.indexOf(v.a), level: v.l };
+  return { q: v.q, o: order.map(i => v.o[i]), a: order.indexOf(v.a), level: v.l, tpl: "verbal" + V.indexOf(v) };
 }
 
 /* ---------------- КЕҢІСТІК: айналдыру (хиралды полиомино) ---------------- */
@@ -154,7 +154,7 @@ function spatial(level) {
   const o = shuffle([correct, ...mirrors]);
   return { q: { kk: "Қай фигура — үлгінің айналдырылған нұсқасы (айнадағы бейнесі емес)?",
                 ru: "Какая фигура — та же, что образец, только повёрнутая (не зеркальная)?" },
-           fig: { base, opts: o }, o: o.map((_, i) => "ABCD"[i]), a: o.indexOf(correct) };
+           fig: { base, opts: o }, o: o.map((_, i) => "ABCD"[i]), a: o.indexOf(correct), tpl: "rot" + base.length };
 }
 
 /* ---------------- МЕХАНИКА: иінтірек, тісті доңғалақтар, блок ---------------- */
@@ -168,7 +168,7 @@ function mech(level) {
     const a = wl * dl > wr * dr ? 0 : wl * dl < wr * dr ? 1 : 2;
     return { q: { kk: `Иінтіректің сол жағында ${wl} кг жүк тіреуден ${dl} м қашықтықта, оң жағында ${wr} кг жүк ${dr} м қашықтықта тұр. Не болады?`,
                   ru: `На рычаге слева груз ${wl} кг на расстоянии ${dl} м от опоры, справа — ${wr} кг на расстоянии ${dr} м. Что произойдёт?` },
-             lever: { wl, wr, dl, dr }, o: LR, a, options: 3 };
+             lever: { wl, wr, dl, dr }, o: LR, a, options: 3, tpl: "lever" + level };
   }
   if (level === 2 || level === 5) {
     const n = level === 2 ? 3 : R(5, 7), crossed = level === 5 && Math.random() < .5;
@@ -177,20 +177,20 @@ function mech(level) {
     const o = [{ kk: "сағат тілімен", ru: "по часовой стрелке" }, { kk: "сағат тіліне қарсы", ru: "против часовой стрелки" }];
     return { q: { kk: `Бір қатарда ${n} тісті доңғалақ ілініскен. Біріншісі сағат тілімен айналады. ${crossed ? "Соңғысымен айқас белдік арқылы жалғанған шкив" : `${ord} доңғалақ`} қалай айналады?`,
                   ru: `В ряд сцеплены ${n} ${n < 5 ? "шестерни" : "шестерён"}. Первая вращается по часовой стрелке. Как вращается ${crossed ? "шкив, соединённый с последней шестернёй перекрёстным ремнём" : `${n}-я шестерня`}?` },
-             gears: { n, crossed }, o, a: same ? 0 : 1, options: 2 };
+             gears: { n, crossed }, o, a: same ? 0 : 1, options: 2, tpl: "gears" + level + (crossed ? "x" : "") };
   }
   const a1 = pick([20, 30, 40, 60]), b1 = pick([10, 15, 20].filter(x => a1 % x === 0 && x < a1));
   const c1 = pick([30, 40]), d1 = pick([10, 20].filter(x => c1 % x === 0));
   const ans = (a1 / b1) * (c1 / d1);
   return { q: { kk: `A доңғалағында ${a1} тіс, ол ${b1} тісті B доңғалағын айналдырады. B-мен бір білікте ${c1} тісті C отыр, ол ${d1} тісті D-ны айналдырады. A бір рет айналғанда D неше рет айналады?`,
                 ru: `У шестерни A ${a1} зубьев, она вращает шестерню B (${b1} зубьев). На одной оси с B стоит C (${c1} зубьев), она вращает D (${d1} зубьев). Сколько оборотов сделает D за один оборот A?` },
-           ...numOptions(ans, [a1 / b1 + c1 / d1, a1 / b1, ans * 2]), options: 4 };
+           ...numOptions(ans, [a1 / b1 + c1 / d1, a1 / b1, ans * 2]), options: 4, tpl: "compound" };
 }
 
 /* ---------------- ДОМЕНДЕР ---------------- */
 export const DOMAINS = [
   { id: "logic",      e: "🧩", gen: (l) => ({ ...seq(l), level: l, options: 4 }) },
-  { id: "numeric",    e: "🔢", gen: (l) => ({ ...num(l), level: l, options: 4 }) },
+  { id: "numeric",    e: "🔢", gen: (l) => ({ tpl: "num" + l, ...num(l), level: l, options: 4 }) },
   { id: "verbal",     e: "📖", gen: (l, used) => ({ ...verbal(l, used), options: 4 }) },
   { id: "spatial",    e: "🧊", gen: (l) => ({ ...spatial(l), level: l, options: 4 }) },
   { id: "mechanical", e: "⚙️", gen: (l) => ({ options: 4, ...mech(l), level: l }) },

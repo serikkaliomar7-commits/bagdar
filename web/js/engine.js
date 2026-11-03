@@ -6,8 +6,11 @@
         оқушы мен мамандықтың RIASEC бейіндерінің Пирсон корреляциясы + ұнату деңгейі.
      2. ҚАБІЛЕТ — бейімделгіш тест (3PL CAT), O*NET талаптарымен салыстыру.
      3. БОЛАШАҚ — 1 − тәуекел; тәуекел = ½·Frey&Osborne + ½·Eloundou (LLM әсері).
+     + ҚҰНДЫЛЫҚ — O*NET Work Values: оқушы 6 карточканы маңыздылығы бойынша реттейді.
    Біріктіру — салмақталған геометриялық орта (компенсацияланбайтын модель):
-        Total = I^0.55 · A^0.30 · F^0.15
+        Total = I^0.50 · A^0.25 · V^0.10 · F^0.15
+   САЛМАҚТАР АЛДЫН АЛА (сарапшылық): пилоттан кейін research/calibrate.py
+   оқушылардың нақты реакцияларына сүйеніп бағалайды.
    Қызығушылық нөл болса, жоғары қабілет мамандықты «сүйреп» шығара алмайды.
    Мейта-талдау: Nye, Su, Rounds & Drasgow (2012) — қызығушылық сәйкестігі
    жұмыс нәтижесі мен тұрақтылықты болжайды.
@@ -15,8 +18,9 @@
 import { CAREERS } from "./data/careers.js";
 import { ITEMS, TYPES } from "./data/interest_items.js";
 import { CLERICAL_NORM } from "./data/ability_items.js";
+import { VALUES } from "./data/values.js";
 
-export const W = { interest: 0.55, ability: 0.30, future: 0.15 };
+export const W = { interest: 0.50, ability: 0.25, values: 0.10, future: 0.15 };
 export const SHIFT = { interview: 0.35, rjp: 1.5 };   // логит-ығысу салмақтары
 /* «Мүлде менікі емес» (реакция = 1) — шынайы көріністі көргеннен кейінгі саналы бас тарту:
    мамандық ұсынымнан алынады (сүзгі сияқты), ұпаймен «түзетілмейді». */
@@ -97,7 +101,10 @@ export function buildProfile(s) {
     if (d === "clerical") ability[d] = clamp(sigmoid((a.rate - CLERICAL_NORM.mid) / CLERICAL_NORM.scale));
     else ability[d] = a.pct ?? null;
   }
-  return { interest: st, ability, dealbreakers: s.dealbreakers || [] };
+  /* Құндылық: 1-орын → 5 ұпай … 6-орын → 0; реттелмегендер — орта (2,5) */
+  const rank = s.values || [];
+  const values = rank.length ? VALUES.map(v => { const i = rank.indexOf(v.id); return i < 0 ? 2.5 : 5 - i; }) : null;
+  return { interest: st, ability, values, dealbreakers: s.dealbreakers || [] };
 }
 
 /* O*NET талап деңгейін (LV) 48 мамандық бойынша [0,25; 0,80] аралығына келтіру:
@@ -138,6 +145,14 @@ function abilityFit(profile, c) {
   return { value: need ? clamp(1 - 2 * gap / need) : 0.5, strong, weak };
 }
 
+/* Құндылық сәйкестігі: Пирсон r ∈ [−1, 1] → V ∈ [0,2; 1].
+   Әлсіз әсер (V^0.10): тең мамандықтарды ажыратады, бірақ қызығушылықты баспайды. */
+function valuesFit(profile, c) {
+  if (!profile.values || !c.values) return { value: 1, r: null };
+  const r = pearson(profile.values, c.values);
+  return { value: 0.6 + 0.4 * r, r };
+}
+
 /* =========================================================
    3. Бағалау
    ========================================================= */
@@ -145,16 +160,17 @@ export function score(s) {
   const profile = buildProfile(s);
   const iv = s.interview?.adj || {}, rjp = s.rjp || {};
   const rows = CAREERS.map(c => {
-    const I = interestFit(profile, c), A = abilityFit(profile, c);
+    const I = interestFit(profile, c), A = abilityFit(profile, c), V = valuesFit(profile, c);
     const F = 1 - c.future.risk;
     let interest = clamp(I.value, 0.01, 0.99);
     const dIv = iv[c.id] ? clamp(iv[c.id].delta, -1, 1) : 0;
     const dRjp = rjp[c.id]?.reaction ? (rjp[c.id].reaction - 3) / 2 : 0;
     if (dIv || dRjp) interest = sigmoid(logit(interest) + SHIFT.interview * dIv + SHIFT.rjp * dRjp);
-    const total = Math.pow(interest, W.interest) * Math.pow(Math.max(A.value, 0.01), W.ability) * Math.pow(F, W.future);
+    const total = Math.pow(interest, W.interest) * Math.pow(Math.max(A.value, 0.01), W.ability)
+                * Math.pow(V.value, W.values) * Math.pow(F, W.future);
     const blockedBy = c.tags.filter(t => profile.dealbreakers.includes(t));
     if (rjp[c.id]?.reaction === 1) blockedBy.push("rejected");
-    return { c, total, interest, ability: A.value, future: F, r: I.r, strong: A.strong, weak: A.weak,
+    return { c, total, interest, ability: A.value, values: V.value, valuesR: V.r, future: F, r: I.r, strong: A.strong, weak: A.weak,
              iv: iv[c.id], rjp: rjp[c.id], blockedBy };
   }).sort((a, b) => b.total - a.total);
   const visible = rows.filter(r => !r.blockedBy.length);

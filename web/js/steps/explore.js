@@ -7,6 +7,7 @@ import { h, screen, fmt, pct } from "../ui.js";
 import { score, byId } from "../engine.js";
 import { ACTIVITIES, CONTEXT_LABEL, freq, regionK } from "../data/filters.js";
 import { SCALE } from "../data/interest_items.js";
+import { TRY_NOW } from "../data/try_now.js";
 
 export function pillars(r) {
   const bar = (label, v, color) => h("div", { class: "pillar" },
@@ -43,10 +44,12 @@ export function preview(c) {
   const lang = getLang();
   const k = regionK(S.about.region);
   const conds = Object.entries(c.context).filter(([, v]) => v >= 2.5).sort((a, b) => b[1] - a[1]);
+  const kz = c.kz || {};
+  const showCollege = S.about.grade === 9 && S.about.after9 !== "school";   // колледж жолы — 9-сынып үшін
   return h("div", { class: "stack" },
     h("div", { class: "card" }, h("h3", {}, "🛠️ " + t("rjp_do")),
       h("div", { class: "chips" }, c.activities.map(a => h("span", { class: "chip", style: "cursor:default" }, L(ACTIVITIES[a])))),
-      h("p", { class: "muted", style: "margin:10px 0 0;font-size:12px" }, t("rjp_do_note"))),
+      h("p", { class: "muted", style: "margin:10px 0 0;font-size:12px" }, t("rjp_do_note") + " " + t("us_note"))),
     h("div", { class: "card" }, h("h3", {}, "🏢 " + t("rjp_cond")),
       conds.length ? h("div", { class: "day" }, conds.map(([key, v]) =>
         h("div", { class: "day__row", style: "grid-template-columns:28px 1fr auto" },
@@ -57,12 +60,28 @@ export function preview(c) {
         c.salary ? [h("div", { class: "kpi__v", style: "font-size:19px" },
             `${fmt(c.salary * k * 0.7 / 1000) }–${fmt(c.salary * k * 1.3 / 1000)} мың ₸`),
             h("div", { class: "muted" }, `hh.kz · n = ${c.n}`)]
-          : h("p", { class: "muted", style: "margin:0" }, t("no_salary"))),
+          : h("p", { class: "muted", style: "margin:0" }, t("no_salary")),
+        c.salary && h("p", { class: "note-us" }, t("hh_note")),
+        kz.salaryBns && h("div", { style: "margin-top:8px" }, `${t("salary_bns")}: `, h("b", {}, `${fmt(kz.salaryBns / 1000)} мың ₸`)),
+        kz.employ != null && h("div", {}, `${t("employ")}: `, h("b", {}, pct(kz.employ > 1 ? kz.employ / 100 : kz.employ)))),
       h("div", { class: "card" }, h("h3", {}, "🔮 " + t("p_future")),
         h("div", { class: "muted", style: "font-size:14px" },
-          `${t("f_auto")}: ${pct(c.future.automation)}`, h("br"), `${t("f_llm")}: ${pct(c.future.llm)}`))),
+          `${t("f_auto")}: ${pct(c.future.automation)}`, h("br"), `${t("f_llm")}: ${pct(c.future.llm)}`),
+        h("p", { class: "note-us" }, t("us_note")))),
     h("div", { class: "card" }, h("h3", {}, "📚 " + t("c_ent")), h("b", {}, L(c.ent)),
-      c.ent.verify && h("div", { class: "muted", style: "font-size:13px" }, t("ent_verify"))));
+      c.ent.verify && h("div", { class: "muted", style: "font-size:13px" }, t("ent_verify"))),
+    TRY_NOW[c.id] && h("div", { class: "card", style: "border-color:var(--good)" }, h("h3", {}, "🧪 " + t("try_t")),
+      h("p", { style: "margin:0" }, L(TRY_NOW[c.id])), h("p", { class: "note-us" }, t("try_l"))),
+    kz.univ?.length > 0 && h("div", { class: "card" }, h("h3", {}, "🏛️ " + t("univ_t")),
+      h("ul", { style: "margin:0;padding-left:20px" }, kz.univ.map(u => h("li", {}, u)))),
+    showCollege && h("div", { class: "card" }, h("h3", {}, "🏫 " + t("college_t")),
+      kz.college ? [h("b", {}, kz.college),
+        kz.collegeYears && h("div", { class: "muted" }, `${t("college_years")}: ${String(kz.collegeYears).replace(".", ",")} ${t("c_years")}`),
+        kz.shortened && h("div", { class: "muted" }, "✓ " + t("college_short"))]
+      : h("p", { class: "muted", style: "margin:0" }, t("college_none"))),
+    kz.video && /^https:\/\//.test(kz.video) && h("div", { class: "card" }, h("h3", {}, "🎬 " + t("video_t")),
+      h("a", { href: kz.video, target: "_blank", rel: "noopener noreferrer" }, kz.video)),
+    kz.sources && h("p", { class: "note-us" }, `${t("kz_src")}: ${kz.sources}`));
 }
 
 export function explore(app, { go, arg }) {
@@ -89,6 +108,11 @@ export function reactBlock(id, onDone) {
     h("h3", {}, t("rjp_q")),
     h("div", { class: "scale" }, SCALE.map(s =>
       h("button", { class: "scale__btn" + (prev === s.v ? " on" : ""), onclick: () => {
-        S.rjp[id] = { reaction: s.v, at: Date.now() }; save(); onDone(); } },
+        // Реакцияға дейінгі тірек мәндері сақталады — пилоттан кейін формула салмақтары
+        // осы реакцияларға регрессиямен бағаланады (research/calibrate.py)
+        const old = S.rjp[id]; delete S.rjp[id];
+        const row = score(S).rows.find(x => x.c.id === id);
+        const comp = old?.comp || { I: +row.interest.toFixed(4), A: +row.ability.toFixed(4), V: +row.values.toFixed(4), F: +row.future.toFixed(4) };
+        S.rjp[id] = { reaction: s.v, at: Date.now(), comp }; save(); onDone(); } },
         h("span", { class: "scale__e" }, s.e), h("span", { class: "scale__l" }, L(t("rjp_scale")[s.v - 1]))))));
 }
